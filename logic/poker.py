@@ -104,65 +104,9 @@ class Holdem:
         hand_rank = STARTING_HAND_RANKING_BY_OPPS[n_opponents].index(hand.compact_repr())
         return round(float(hand_rank + 1) / N_STARTING_HAND_RANKING * 1000) / 10.0
 
-    @staticmethod
-    def OCOC1_bad_distribute_pot(hand_ranks, participant_bets):
-        sorted_hand_ranks_idxs = sorted(range(len(hand_ranks)), key=lambda k: hand_ranks[k], reverse=True)
-        sorted_bets_idxs = sorted(range(len(participant_bets)), key=lambda k: participant_bets[k])
-
-        participant_wins = [0] * len(participant_bets)
-        unclaimed_pot = 0
-        partial_bet_distributed = 0
-
-        # Enumerate over players from short to biggest stack
-        for i, bet_idx in enumerate(sorted_bets_idxs):
-            # Find the relative place of the hand rank for the i-th smallest player
-            ith_smallest_player_relative_hand_rank = sorted_hand_ranks_idxs.index(bet_idx)
-            if ith_smallest_player_relative_hand_rank <= i:
-                # i-th player won partial pot
-                side_pot = (participant_bets[bet_idx] - partial_bet_distributed) * (len(participant_bets) - i) + unclaimed_pot
-                participant_wins[bet_idx] = side_pot
-                partial_bet_distributed = participant_bets[bet_idx]
-                unclaimed_pot = 0
-            else:
-                unclaimed_pot += participant_bets[bet_idx]
-
-        return participant_wins
-
-    @staticmethod
-    def OCOC1_bad_distribute_pot2(hand_ranks, participant_bets):
-        OCOC1 new logic:
-        '''
-        1. Go over winners from best to worse hand
-        Each hand: gather all the bets that are equal / smaller in size (left-most in sorted array of bets)
-        Keep in mind the highest partial_bet_distributed, and decrease it from the amount taken from each player
-
-        If hand ranks is: [cc, bb, aa, aa, zz, aa], then group_sorted_indexes should be: [(2,3,5), 1, 0, 4], and pot should be equally divided between group of same i-th rank
-        '''
-        sorted_hand_ranks_idxs = sorted(range(len(hand_ranks)), key=lambda k: hand_ranks[k], reverse=True)
-        sorted_bets_idxs = sorted(range(len(participant_bets)), key=lambda k: participant_bets[k])
-
-        participant_wins = [0] * len(participant_bets)
-        unclaimed_pot = 0
-        partial_bet_distributed = 0
-
-        # Enumerate over players from short to biggest stack
-        for i, bet_idx in enumerate(sorted_bets_idxs):
-            # Find the relative place of the hand rank for the i-th smallest player
-            ith_smallest_player_relative_hand_rank = sorted_hand_ranks_idxs.index(bet_idx)
-            if ith_smallest_player_relative_hand_rank <= i:
-                # i-th player won partial pot
-                side_pot = (participant_bets[bet_idx] - partial_bet_distributed) * (len(participant_bets) - i) + unclaimed_pot
-                participant_wins[bet_idx] = side_pot
-                partial_bet_distributed = participant_bets[bet_idx]
-                unclaimed_pot = 0
-            else:
-                unclaimed_pot += participant_bets[bet_idx]
-
-        return participant_wins
 
     @staticmethod
     def distribute_pot(hand_ranks, participant_bets):
-        OCOC1 even better logic:
         '''
         keep 1 x MAIN + N x SIDE (sorted) pots. Per pot keep a list of players that are part of it.
         If hand ranks is: [cc, bb, aa, aa, zz, aa], then hand rank orders is: [2, 1, 0, 0, 3, 0].
