@@ -114,24 +114,33 @@ class Holdem:
         So if POT #2 contains players [0, 2, 3] -> the pot will be split between players 2 & 3 (both with order = 0)
         '''
 
-        sorted_hand_ranks_idxs = sorted(range(len(hand_ranks)), key=lambda k: hand_ranks[k], reverse=True)
-        sorted_bets_idxs = sorted(range(len(participant_bets)), key=lambda k: participant_bets[k])
+        # If hand_ranks = ['cc', 'cc', 'aa', 'aa', 'zz', 'bb'], then hand_rank_orders = [2, 2, 0, 0, 3, 1]
+        # So if participant_bets = [4, 5, 6, 1, 2, 0], then pots_participants = [[0, 1, 2, 3, 4], [0, 1, 2, 4], [0, 1, 2], [1, 2]]
 
+        # sorted_hand_ranks_idxs = sorted(range(len(hand_ranks)), key=lambda k: hand_ranks[k], reverse=True)
+        # sorted_bets_idxs = sorted(range(len(participant_bets)), key=lambda k: participant_bets[k])
+
+        # OCOC1 - better logic
+
+        participant_bets = [4, 5, 6, 1, 2, 0]
+        pots_participants = [[0, 1, 2, 3, 4], [0, 1, 2, 4], [0, 1, 2], [1, 2]]
+
+        hand_ranks = ['cc', 'cc', 'aa', 'aa', 'zz', 'bb']
+        hand_rank_orders = [2, 2, 0, 0, 3, 1]
+
+        # print participant_bets
         participant_wins = [0] * len(participant_bets)
-        unclaimed_pot = 0
-        partial_bet_distributed = 0
-
-        # Enumerate over players from short to biggest stack
-        for i, bet_idx in enumerate(sorted_bets_idxs):
-            # Find the relative place of the hand rank for the i-th smallest player
-            ith_smallest_player_relative_hand_rank = sorted_hand_ranks_idxs.index(bet_idx)
-            if ith_smallest_player_relative_hand_rank <= i:
-                # i-th player won partial pot
-                side_pot = (participant_bets[bet_idx] - partial_bet_distributed) * (len(participant_bets) - i) + unclaimed_pot
-                participant_wins[bet_idx] = side_pot
-                partial_bet_distributed = participant_bets[bet_idx]
-                unclaimed_pot = 0
-            else:
-                unclaimed_pot += participant_bets[bet_idx]
+        for pot_participants in pots_participants:
+            short_stack = min([participant_bets[k] for k in pot_participants])
+            pot_size = short_stack * len(pot_participants)
+            pot_win_rank = max([hand_rank_orders[k] for k in pot_participants])
+            pot_winners_idx = [i for i, x in enumerate(hand_rank_orders) if x == pot_win_rank and i in pot_participants]
+            split_pot_size = pot_size / len(pot_winners_idx)
+            for winner_idx in pot_winners_idx:
+                participant_wins[winner_idx] += split_pot_size
+            for participant_idx in pot_participants:
+                participant_bets[participant_idx] -= short_stack
+            # print participant_wins
+            # print participant_bets
 
         return participant_wins
